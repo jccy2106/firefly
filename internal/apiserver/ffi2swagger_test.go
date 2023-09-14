@@ -152,7 +152,7 @@ func TestGenerate(t *testing.T) {
 func TestGenerateWithLocation(t *testing.T) {
 	g := NewFFISwaggerGen()
 	api := &core.ContractAPI{Location: fftypes.JSONAnyPtr(`{}`)}
-	doc := g.Generate(context.Background(), "http://localhost:12345", api, testFFI())
+	doc := g.Generate(context.Background(), "http://localhost:54321", api, testFFI())
 
 	b, err := yaml.Marshal(doc)
 	assert.NoError(t, err)
@@ -204,4 +204,59 @@ func TestFFIParamBadSchema(t *testing.T) {
 	}
 	_, err = contractJSONSchema(ctx, params, true)
 	assert.Error(t, err)
+}
+
+func TestGenerateWithHeader(t *testing.T) {
+	g := NewFFISwaggerGen()
+
+	api := &core.ContractAPI{}
+	doc := g.Generate(context.Background(), "http://localhost:12345", api, testFFI())
+	// doc.Components.SecuritySchemes = append(doc.Components.SecuritySchemes, ss)
+	server := &openapi3.Server{
+		URL: "http://12345.example.com",
+	}
+	doc.AddServer(server)
+
+	securityScheme := &openapi3.SecurityScheme{
+		Type:        "apiKey",
+		In:          "header",
+		Name:        "X-API-KEY",
+		Description: "API Key required to access the API",
+	}
+	doc.Components = &openapi3.Components{
+		SecuritySchemes: make(map[string]*openapi3.SecuritySchemeRef),
+	}
+	doc.Components.SecuritySchemes["ApiKeyAuth"] = &openapi3.SecuritySchemeRef{
+		Value: securityScheme,
+	}
+	b, err := yaml.Marshal(doc)
+	assert.NoError(t, err)
+	fmt.Print("printing doc")
+	fmt.Print(string(b))
+
+	assert.ElementsMatch(t, []string{"/interface", "/invoke/method1", "/invoke/method2", "/query/method1", "/query/method2", "/listeners/event1"}, pathNames(doc.Paths))
+
+	invokeMethod1 := doc.Paths["/invoke/method1"].Post.RequestBody.Value.Content.Get("application/json").Schema.Value
+	assert.Equal(t, "object", invokeMethod1.Type)
+	assert.ElementsMatch(t, []string{"input", "location", "options", "key", "idempotencyKey"}, paramNames(invokeMethod1.Properties))
+	assert.Equal(t, "object", invokeMethod1.Properties["input"].Value.Type)
+	assert.ElementsMatch(t, []string{"x", "y", "z"}, paramNames(invokeMethod1.Properties["input"].Value.Properties))
+
+	invokeMethod2 := doc.Paths["/invoke/method2"].Post.RequestBody.Value.Content.Get("application/json").Schema.Value
+	assert.Equal(t, "object", invokeMethod2.Type)
+	assert.ElementsMatch(t, []string{"input", "location", "options", "key", "idempotencyKey"}, paramNames(invokeMethod2.Properties))
+	assert.Equal(t, "object", invokeMethod2.Properties["input"].Value.Type)
+	assert.ElementsMatch(t, []string{}, paramNames(invokeMethod2.Properties["input"].Value.Properties))
+
+	queryMethod1 := doc.Paths["/query/method1"].Post.RequestBody.Value.Content.Get("application/json").Schema.Value
+	assert.Equal(t, "object", queryMethod1.Type)
+	assert.ElementsMatch(t, []string{"input", "location", "options", "key", "idempotencyKey"}, paramNames(queryMethod1.Properties))
+	assert.Equal(t, "object", queryMethod1.Properties["input"].Value.Type)
+	assert.ElementsMatch(t, []string{"x", "y", "z"}, paramNames(queryMethod1.Properties["input"].Value.Properties))
+
+	queryMethod2 := doc.Paths["/query/method2"].Post.RequestBody.Value.Content.Get("application/json").Schema.Value
+	assert.Equal(t, "object", queryMethod2.Type)
+	assert.ElementsMatch(t, []string{"input", "location", "options", "key", "idempotencyKey"}, paramNames(queryMethod2.Properties))
+	assert.Equal(t, "object", queryMethod2.Properties["input"].Value.Type)
+	assert.ElementsMatch(t, []string{}, paramNames(queryMethod2.Properties["input"].Value.Properties))
 }

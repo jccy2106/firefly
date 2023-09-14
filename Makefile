@@ -1,3 +1,6 @@
+version:
+		$(VGO) version
+
 VGO=go
 BINARY_NAME=firefly
 GOFILES := $(shell find cmd internal pkg -name '*.go' -print)
