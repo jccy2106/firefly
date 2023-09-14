@@ -206,7 +206,7 @@ func TestFFIParamBadSchema(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGenerateWithHeader(t *testing.T) {
+func TestGenerateWithSecurity(t *testing.T) {
 	g := NewFFISwaggerGen()
 
 	api := &core.ContractAPI{}
@@ -216,7 +216,10 @@ func TestGenerateWithHeader(t *testing.T) {
 		URL: "http://12345.example.com",
 	}
 	doc.AddServer(server)
+	securityReq := openapi3.NewSecurityRequirement()
+	securityReq.Authenticate("basicAuth")
 
+	doc.Security = openapi3.SecurityRequirements{securityReq}
 	securityScheme := &openapi3.SecurityScheme{
 		Type:        "apiKey",
 		In:          "header",

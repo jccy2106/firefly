@@ -209,12 +209,18 @@ func (as *apiServer) contractSwaggerGenerator(mgr namespace.Manager, apiBaseURL 
 
 		baseURL := fmt.Sprintf("%s/namespaces/%s/apis/%s", apiBaseURL, vars["ns"], vars["apiName"])
 		doc := as.ffiSwaggerGen.Generate(req.Context(), baseURL, api, ffi)
+
+		securityReq := openapi3.NewSecurityRequirement()
+		securityReq.Authenticate("basicAuth")
+
+		doc.Security = openapi3.SecurityRequirements{securityReq}
+
 		securityScheme := &openapi3.SecurityScheme{
-			Type:        "apiKey",
-			In:          "header",
-			Name:        "X-API-KEY",
+			Type:        "http",
+			Scheme:      "basic",
 			Description: "API Key required to access the API",
 		}
+
 		doc.Components = &openapi3.Components{
 			SecuritySchemes: make(map[string]*openapi3.SecuritySchemeRef),
 		}
