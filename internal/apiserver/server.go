@@ -218,13 +218,13 @@ func (as *apiServer) contractSwaggerGenerator(mgr namespace.Manager, apiBaseURL 
 		securityScheme := &openapi3.SecurityScheme{
 			Type:        "http",
 			Scheme:      "basic",
-			Description: "API Key required to access the API",
+			Description: "Basic auth required to access the API",
 		}
 
 		doc.Components = &openapi3.Components{
 			SecuritySchemes: make(map[string]*openapi3.SecuritySchemeRef),
 		}
-		doc.Components.SecuritySchemes["ApiKeyAuth"] = &openapi3.SecuritySchemeRef{
+		doc.Components.SecuritySchemes["basicAuth"] = &openapi3.SecuritySchemeRef{
 			Value: securityScheme,
 		}
 		return doc, nil
